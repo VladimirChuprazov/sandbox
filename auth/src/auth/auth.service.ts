@@ -8,12 +8,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { EncrypterService } from '../encrypter/encrypter.service';
 import { AuthEntity } from './entities/auth.entity';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prismaService: PrismaService,
-    private encrypterService: EncrypterService,
+    private readonly prismaService: PrismaService,
+    private readonly encrypterService: EncrypterService,
+    private readonly jwtService: JwtService,
   ) {}
 
   private async checkIfUserExists(
@@ -36,14 +38,16 @@ export class AuthService {
 
     const { hashedStr, salt } = await this.encrypterService.hash(password);
 
-    await this.prismaService.user.create({
+    const user = await this.prismaService.user.create({
       data: {
         email: username,
         password: `${hashedStr}.${salt}`,
       },
     });
 
-    return { accessToken: '123' };
+    const payload = { sub: user.id, email: user.email };
+
+    return { accessToken: await this.jwtService.signAsync(payload) };
   }
 
   async login(loginDto: LoginDto): Promise<AuthEntity> {
@@ -69,6 +73,8 @@ export class AuthService {
       throw new UnauthorizedException('Wrong credentials');
     }
 
-    return { accessToken: '123' };
+    const payload = { sub: user.id, email: user.email };
+
+    return { accessToken: await this.jwtService.signAsync(payload) };
   }
 }
