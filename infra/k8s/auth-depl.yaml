@@ -23,6 +23,11 @@ spec:
                 secretKeyRef:
                   name: auth-secret
                   key: JWT_SECRET
+            - name: COOKIE_EXPIRATION_TIME_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: COOKIE_EXPIRATION_TIME_MS
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
@@ -64,3 +69,10 @@ metadata:
 type: Opaque
 data:
   JWT_SECRET: NDAgNzQgMGQgYzIgM2YgMzMgNTMgMGIgOWQgYTQgMTggMzEgODEgZjQgYmEgYjY=
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+data:
+  COOKIE_EXPIRATION_TIME_MS: "86400000"
