@@ -4,9 +4,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
-import { EncrypterService } from 'src/encrypter/encrypter.service';
+import { EncrypterService } from '../encrypter/encrypter.service';
 import { AuthEntity } from './entities/auth.entity';
 
 @Injectable()
@@ -34,12 +34,12 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
 
-    const hashedPassword = await this.encrypterService.hash(password);
+    const { hashedStr, salt } = await this.encrypterService.hash(password);
 
     await this.prismaService.user.create({
       data: {
         email: username,
-        password: hashedPassword,
+        password: `${hashedStr}.${salt}`,
       },
     });
 
@@ -57,9 +57,12 @@ export class AuthService {
       throw new UnauthorizedException('Wrong credentials');
     }
 
+    const [hashedPassword, salt] = user.password.split('.');
+
     const isPasswordValid = await this.encrypterService.compare(
       password,
-      user.password,
+      hashedPassword,
+      salt,
     );
 
     if (!isPasswordValid) {
